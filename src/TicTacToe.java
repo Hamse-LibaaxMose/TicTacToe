@@ -1,19 +1,26 @@
 import java.util.Scanner;
 
 public class TicTacToe {
-    private static char[][] grid = {  // The 3x3 game board
-            {' ', ' ', ' '},
-            {' ', ' ', ' '},
-            {' ', ' ', ' '}
+    private static char[] grid = {
+            ' ', ' ', ' ',
+            ' ', ' ', ' ',
+            ' ', ' ', ' '
     };
-    private static char currentPlayer = 'X';  // Start with Player X
+    private static char currentPlayer = 'X';
     private static final Scanner scanner = new Scanner(System.in);
 
     public static void main(String[] args) {
+        System.out.println("Game started! Player X goes first.");
+
         while (true) {
-            displayGrid();  // Show the board
-            if (currentPlayer == 'X') playerMove();
-            else computerMove();  // AI makes a move
+            displayGrid();
+            System.out.println("Current Player: " + currentPlayer);
+
+            if (currentPlayer == 'X') {
+                playerMove();
+            } else {
+                computerMove();
+            }
 
             if (isWinner(currentPlayer)) {
                 displayGrid();
@@ -25,98 +32,115 @@ public class TicTacToe {
                 System.out.println("It's a draw! 😐");
                 break;
             }
-            currentPlayer = (currentPlayer == 'X') ? 'O' : 'X';  // Switch turns
+
+            currentPlayer = (currentPlayer == 'X') ? 'O' : 'X';
         }
     }
 
-    // Player's move (human input)
+    // Player's move
     private static void playerMove() {
-        int row, col;
+        int index;
         do {
-            System.out.println("Enter row and column (0-2): ");
-            row = scanner.nextInt();
-            col = scanner.nextInt();
-        } while (!isValidMove(row, col));
-        grid[row][col] = 'X';
+            System.out.println("Enter index (0-8): ");
+            index = scanner.nextInt();
+        } while (!isValidMove(index));
+
+        System.out.println("Player X chose index: " + index);
+        grid[index] = 'X';
     }
 
-    // AI's move using Minimax
+    // AI's move using Minimax with Alpha-Beta Pruning
     private static void computerMove() {
         int bestMoveScore = Integer.MIN_VALUE;
-        int bestRow = -1, bestCol = -1;
+        int bestIndex = -1;
 
-        for (int r = 0; r < 3; r++) {
-            for (int c = 0; c < 3; c++) {
-                if (grid[r][c] == ' ') {  // If cell is empty, try move
-                    grid[r][c] = 'O';
-                    int moveScore = minimax(false);  // Call Minimax
-                    grid[r][c] = ' ';  // Undo move
-                    if (moveScore > bestMoveScore) {  // Pick the best move
-                        bestMoveScore = moveScore;
-                        bestRow = r;
-                        bestCol = c;
-                    }
+        System.out.println("AI is calculating the best move...");
+
+        for (int i = 0; i < 9; i++) {
+            if (grid[i] == ' ') {
+                grid[i] = 'O';
+                int moveScore = minimax(false, Integer.MIN_VALUE, Integer.MAX_VALUE);
+                grid[i] = ' ';
+
+                if (moveScore > bestMoveScore) {
+                    bestMoveScore = moveScore;
+                    bestIndex = i;
                 }
             }
         }
-        grid[bestRow][bestCol] = 'O';  // AI places 'O' in the best spot
+
+        System.out.println("AI chooses move at index " + bestIndex + " with score: " + bestMoveScore);
+        grid[bestIndex] = 'O';
     }
 
-    // Minimax algorithm for AI decision-making
-    private static int minimax(boolean isAITurn) {
-        if (isWinner('X')) return -1;  // Player X wins
-        if (isWinner('O')) return 1;   // AI wins
-        if (isDraw()) return 0;        // Tie
+    // Minimax Algorithm with Alpha-Beta Pruning
+    private static int minimax(boolean isAITurn, int alpha, int beta) {
+        if (isWinner('X')) return -1;
+        if (isWinner('O')) return 1;
+        if (isDraw()) return 0;
 
         int bestMoveScore = isAITurn ? Integer.MIN_VALUE : Integer.MAX_VALUE;
-        for (int r = 0; r < 3; r++) {
-            for (int c = 0; c < 3; c++) {
-                if (grid[r][c] == ' ') {  // If cell is empty, try move
-                    grid[r][c] = isAITurn ? 'O' : 'X';
-                    int moveScore = minimax(!isAITurn);
-                    grid[r][c] = ' ';  // Undo move
-                    bestMoveScore = isAITurn ? Math.max(moveScore, bestMoveScore) : Math.min(moveScore, bestMoveScore);
+
+        for (int i = 0; i < 9; i++) {
+            if (grid[i] == ' ') {
+                grid[i] = isAITurn ? 'O' : 'X';
+                int moveScore = minimax(!isAITurn, alpha, beta);
+                grid[i] = ' ';
+
+                if (isAITurn) {  // AI is maximizing
+                    bestMoveScore = Math.max(moveScore, bestMoveScore);
+                    alpha = Math.max(alpha, bestMoveScore);
+                } else {  // Player X is minimizing
+                    bestMoveScore = Math.min(moveScore, bestMoveScore);
+                    beta = Math.min(beta, bestMoveScore);
+                }
+
+                // **Alpha-Beta Pruning Condition**
+                if (beta <= alpha) {
+                    break;  // Prune the branch
                 }
             }
         }
+
         return bestMoveScore;
     }
 
-    // Display the board in the console
+    // Display the board
     private static void displayGrid() {
+        System.out.println("\nCurrent Board:");
         System.out.println("-------------");
-        for (char[] row : grid) {
-            System.out.print("| ");
-            for (char cell : row) {
-                System.out.print(cell + " | ");
-            }
-            System.out.println("\n-------------");
+        for (int i = 0; i < 9; i++) {
+            System.out.print("| " + grid[i] + " ");
+            if (i % 3 == 2) System.out.println("|\n-------------");
         }
     }
 
     // Check if a move is valid
-    private static boolean isValidMove(int row, int col) {
-        return row >= 0 && row < 3 && col >= 0 && col < 3 && grid[row][col] == ' ';
+    private static boolean isValidMove(int index) {
+        return index >= 0 && index < 9 && grid[index] == ' ';
     }
 
     // Check for a winner
     private static boolean isWinner(char player) {
-        for (int i = 0; i < 3; i++) {
-            if ((grid[i][0] == player && grid[i][1] == player && grid[i][2] == player) ||  // Row win
-                    (grid[0][i] == player && grid[1][i] == player && grid[2][i] == player))  // Column win
+        int[][] winPatterns = {
+                {0, 1, 2}, {3, 4, 5}, {6, 7, 8}, // Rows
+                {0, 3, 6}, {1, 4, 7}, {2, 5, 8}, // Columns
+                {0, 4, 8}, {2, 4, 6}             // Diagonals
+        };
+
+        for (int[] pattern : winPatterns) {
+            if (grid[pattern[0]] == player && grid[pattern[1]] == player && grid[pattern[2]] == player) {
                 return true;
+            }
         }
-        return (grid[0][0] == player && grid[1][1] == player && grid[2][2] == player) ||  // Diagonal \
-                (grid[0][2] == player && grid[1][1] == player && grid[2][0] == player);   // Diagonal /
+        return false;
     }
-
-
 
     // Check for a draw
     private static boolean isDraw() {
-        for (char[] row : grid)
-            for (char cell : row)
-                if (cell == ' ') return false;  // If empty cell exists, game is not a draw
+        for (char cell : grid) {
+            if (cell == ' ') return false;
+        }
         return true;
     }
 }
